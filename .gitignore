@@ -1,0 +1,21 @@
+# Ignore common build/simulation artifacts
+*.vcd
+*.vvp
+*.wlf
+*.log
+*.vpd
+/build/
+/waveforms/
+*.tmp
+*.bak
+.DS_Store
+.vscode/
+*.o
+*.exe
+# Large binaries
+*.bin
+*.img
+
+# Git LFS handled files (if used):
+# *.pdf
+# *.mp4
