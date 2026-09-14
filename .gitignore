@@ -1,0 +1,32 @@
+# Simulation / synthesis artifacts
+simv
+simv.daidir
+csrc
+ucli.key
+*.vpd
+*.fsdb
+*.log
+*.syn
+*.svf
+*.sdf
+
+# Vivado / Quartus
+*.jou
+*.wdb
+*.xpr
+*.cache
+*.hw
+*.ip_user_files
+
+# Synopsys DC
+*.ddc
+*.db
+*.mapped
+*.vg
+*.rep
+
+# Tools
+.vscode/
+.idea/
+*.swp
+.DS_Store
