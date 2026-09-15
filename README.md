@@ -43,21 +43,39 @@
 
 ```
 .
-├── rtl/
-│   └── riscv.v            # 顶层设计源码（Verilog，单文件，含全部子模块）
+├── rtl/                        # 设计源码（每个模块一个文件）
+│   ├── riscv_defines.v         # 全局 `define 宏定义（指令/控制信号编码）
+│   ├── riscv.v                 # 顶层模块（实例化全部子模块）
+│   ├── ControlUnit.v           # 集中式控制 + 分支预测 + 冒险管理
+│   ├── ALU.v / EXT.v / Flopr.v # 运算 / 立即数扩展 / 流水寄存器
+│   ├── IM.v / IR.v / PC.v / NPC.v / RF.v / DM.v
+│   └── MUX_2to1_A.v / MUX_3to1_B.v / MUX_3to1_LMD.v / MUX_3to1.v
+├── sim/                        # 功能仿真
+│   ├── riscv_sim.v             # Testbench（$readmemh 加载 hex，5000 周期）
+│   ├── test_program.hex        # 测试程序机器码（37 条，来自设计报告）
+│   ├── files.f                 # VCS 文件列表
+│   └── run_sim.sh              # VCS+Verdi 编译运行脚本
+├── synth/                      # 逻辑综合（Design Compiler）
+│   ├── dc_synth.tcl            # 综合脚本（环境变量占位，5.75ns/retime/SRAM 分组）
+│   └── README.md               # 综合使用说明
+├── legacy/
+│   └── riscv_singlefile.v      # 原单文件版（与 rtl/ 逻辑一致，供对照）
 ├── docs/
-│   ├── design_report.pdf          # 决赛版技术文档（53页，脱敏版）
-│   ├── design_report.docx         # 决赛版技术文档（Word 版）
-│   ├── simulation_notes.docx      # 仿真验证说明（五类指令波形分析）
+│   ├── design_report.pdf       # 决赛版技术文档（53页，脱敏版）
+│   ├── design_report.docx      # 决赛版技术文档（Word 版）
+│   ├── simulation_notes.docx   # 仿真验证说明（五类指令波形分析）
 │   └── project_presentation.pptx  # 项目答辩 PPT（22页，脱敏版）
 ├── assets/
-│   ├── pipeline_arch.png          # 六级流水线架构图
-│   ├── branch_predictor.png       # 动态分支预测器结构图
-│   ├── timing_report.png          # 关键路径时序报告
-│   ├── retiming_opt.png           # Retiming 优化对比
-│   └── sram_pins.png              # SRAM 引脚连接图
+│   ├── pipeline_arch.png       # 六级流水线架构图
+│   ├── branch_predictor.png    # 动态分支预测器结构图
+│   ├── timing_report.png       # 关键路径时序报告
+│   ├── retiming_opt.png        # Retiming 优化对比
+│   └── sram_pins.png           # SRAM 引脚连接图
 └── README.md
 ```
+
+> **说明**：`rtl/` 为拆分后的多文件工程（逻辑与 `legacy/riscv_singlefile.v` 完全一致），
+> 新增、删除模块只需增删对应文件，便于团队协作与版本管理。
 
 ## 🏗️ 设计架构
 
@@ -92,6 +110,16 @@ IF 段并行查表预测，EX 段比对验证，预测成功零惩罚，失败�
 ## 🧪 仿真与验证
 
 - **工具链**：Synopsys VCS（编译仿真）+ Verdi（波形调试），测试程序经交叉编译生成 Hex 机器码，由 Testbench 通过 `$readmemh` 加载至指令存储器
+- **快速开始**：
+
+```bash
+cd sim
+export VERDI_HOME=/path/to/Verdi   # Verdi 安装目录（含 PLI）
+./run_sim.sh                       # 编译 + 运行 + 打开 Verdi GUI
+# 或 ./run_sim.sh --no-gui 只跑仿真
+```
+
+- **测试程序**：`sim/test_program.hex`（37 条指令，覆盖 R/I/S/B/J 五类指令），源 C 代码见设计报告 4.1.1
 - **覆盖范围**：算术运算、逻辑移位、比较分支、加载存储、跳转链接等全部已实现指令
 - **冒险验证**：Load-Use 停顿正确插入气泡、分支误预测冲刷正确修正 PC、前递通路优先级正确
 - **详细说明**：见 [docs/simulation_notes.docx](docs/simulation_notes.docx)（R/I/S/B/J 五类指令波形分析）
@@ -110,6 +138,20 @@ IF 段并行查表预测，EX 段比对验证，预测成功零惩罚，失败�
 ### Retiming 优化对比
 
 ![Retiming 优化](assets/retiming_opt.png)
+
+## 🔨 逻辑综合（Design Compiler）
+
+综合脚本见 [`synth/dc_synth.tcl`](synth/dc_synth.tcl)，使用说明见 [`synth/README.md`](synth/README.md)：
+
+```bash
+cd synth
+export LIB_PATH=/path/to/tcbn65lp_220a                    # 标准单元库目录
+export SRAM_LIB_PATH=/path/to/tsln65lpll2048x64m8_220a/SYNOPSYS  # SRAM 库目录
+export HDL_PATH=/path/to/this/repo/rtl                    # RTL 目录
+export INC_PATH=/path/to/this/repo/rtl                    # include 目录
+mkdir -p output
+dc_shell -f dc_synth.tcl
+```
 
 ## 📚 参考资料
 
